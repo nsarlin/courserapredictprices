@@ -88,12 +88,7 @@ def add_implicit_rows(grpd):
     return grpd
 
 
-def make_base_df(transactions, store=None):
-    if store is not None:
-        if "base_df" in store:
-            base_df = store["base_df"]
-            print("base_df loaded from store")
-            return base_df
+def make_base_df(transactions):
 
     base_df = grp_trans(transactions)
     print("Grouping done")
@@ -451,14 +446,7 @@ lag_cols = ["item_price", "item_cnt"]
 # , "item_cnt_mean_month_item", "item_cnt_mean_month_shop"]
 
 
-def do_pipelines(train, test, items, item_categories, shops, val=False,
-                 store=None):
-    if store is not None:
-        train = load_store(store, "train", val)
-        test = load_store(store, "test", val)
-
-        print("pipelined train/test recovered from store")
-        return (train, test)
+def do_pipelines(train, test, items, item_categories, shops, val=False):
 
     item_categories = prepare_subcats(item_categories)
 
@@ -469,7 +457,7 @@ def do_pipelines(train, test, items, item_categories, shops, val=False,
 
     glob_ppl_1 = Pipeline([
         ("category_adder", ItemCategoryAdder(items)),
-        ("subcategory_adder", ItemSubCategoryAdder()),
+        ("subcategory_adder", ItemSubCategoryAdder(item_categories)),
         ("year_month_adder", YearMonthAdder()),
         ("holiday_cnt_adder", HolidayCountAdder()),
         ("item_cnt_clipper", CntClipper("item_cnt", 0, 40)),
@@ -545,34 +533,42 @@ def load_files(input_path):
     return (transactions, items, item_categories, shops, test)
 
 
-def prepare_all(input_path, output_path, val=False, store=None, load=False):
+def prepare_all(input_path, output_path, val=False, store=None):
 
     transactions, items, item_categories, shops, test = load_files(input_path)
     downcast_all([transactions, items, item_categories, shops, test])
 
-    if load:
-        base_df = make_base_df(transactions, store)
+    if store:
+        if "base_df" in store:
+            base_df = store["base_df"]
+            print("base_df loaded from store")
+        else:
+            base_df = make_base_df(transactions)
+            store["base_df"] = base_df
     else:
         base_df = make_base_df(transactions)
-        if store is not None:
-            store["base_df"] = base_df
-    if val:
-        train, test, trues = train_test_split(base_df, test, val)
-        store["train_raw_val"] = train
-        store["test_raw_val"] = train
-        store["trues_val"] = trues
-    else:
-        train, test = train_test_split(base_df, test, val)
-        store["train_raw_sub"] = train
-        store["test_raw_sub"] = train
 
-    if load:
-        train, test = do_pipelines(train, test, items, item_categories, shops,
-                                   val, store)
-    else:
-        train, test = do_pipelines(train, test, items, item_categories, shops,
-                                   val)
-        if store is not None:
+    # TODO: load_store
+    train_raw, test_raw, trues = train_test_split(test, base_df, val)
+    if store: # TODO: use save_store
+        if val:
+            store["train_raw_val"] = train_raw
+            store["test_raw_val"] = train_raw
+            store["trues_val"] = trues
+        else:
+            store["train_raw_sub"] = train_raw
+            store["test_raw_sub"] = test_raw
+
+    if store:
+        train = load_store(store, "train", val)
+        test = load_store(store, "test", val)
+        if test and train:
+            print("pipelined train/test recovered from store")
+
+    if (store is None) or (train is None) or (test is None):
+        train, test = do_pipelines(train_raw, test_raw, items, item_categories,
+                                   shops, val)
+        if store:
             save_store(store, train, "train", val)
             save_store(store, test, "test", val)
 
