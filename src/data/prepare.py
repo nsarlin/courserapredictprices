@@ -8,7 +8,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold
-from scipy.sparse import hstack
+from scipy.sparse import hstack, save_npz
 
 
 def save_store(store, df, name, val=False):
@@ -26,6 +26,7 @@ def load_store(store, name, val=False):
         name = name+"_sub"
     if name in store:
         return store[name]
+    print(name+" not found in store")
     return None
 
 
@@ -571,6 +572,7 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
     if (store is None) or (train is None) or (test is None):
         train, test = do_pipelines(train_raw, test_raw, items, item_categories,
                                    shops, val)
+        print("pipelined train/test successfully built")
         if store:
             save_store(store, train, "train", val)
             save_store(store, test, "test", val)
@@ -592,4 +594,16 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     X_train = np_ppl.fit_transform(X_train)
     X_test = np_ppl.transform(X_test)
-    return X_train, y_train, X_test
+
+    print("saving data to output dir:")
+    print("y_train")
+    np.save(os.path.join(output_path, "y_train.npy"), y_train)
+
+    if val:
+        print("y_trues")
+        np.save(os.path.join(output_path, "y_trues.npy"), trues)
+
+    print("X_test")
+    save_npz(os.path.join(output_path, "X_test.npz"), X_test)
+    print("X_train")
+    save_npz(os.path.join(output_path, "X_train.npz"), X_train)
