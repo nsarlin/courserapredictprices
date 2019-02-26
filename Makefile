@@ -1,4 +1,4 @@
-.PHONY: clean data lint requirements sync_data_to_s3 sync_data_from_s3
+.PHONY: clean data datasample lint sync_data_to_s3 sync_data_from_s3
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -21,17 +21,18 @@ endif
 #################################################################################
 
 ## Install Python Dependencies
-requirements: test_environment
+.requirements: .test_environment requirements.txt
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
+	touch .requirements
 
 ## Make Dataset
-data: requirements
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py -i data/interim data/raw data/processed
-
-## Make Dataset
-datasample: requirements
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py --sample -i data/interim_smpl data/raw data/processed_smpl
+data: X_train.npz
+data: SAMPLE=
+datasample: X_train.npz
+datasample: SAMPLE=--sample
+X_train.npz: .requirements
+	$(PYTHON_INTERPRETER) src/data/make_dataset.py $(SAMPLE) -i data/interim data/raw data/processed
 
 ## Delete all compiled Python files
 clean:
@@ -77,8 +78,9 @@ else
 endif
 
 ## Test python environment is setup correctly
-test_environment:
+.test_environment: test_environment.py
 	$(PYTHON_INTERPRETER) test_environment.py
+	touch .test_environment
 
 #################################################################################
 # PROJECT RULES                                                                 #
