@@ -541,7 +541,7 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     downcast_all([transactions, items, item_categories, shops, test])
 
-    if store:
+    if store is not None:
         if "base_df" in store:
             base_df = store["base_df"]
             print("base_df loaded from store")
@@ -553,7 +553,7 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     # TODO: load_store
     train_raw, test_raw, trues = train_test_split(test, base_df, val)
-    if store: # TODO: use save_store
+    if store is not None:  # TODO: use save_store
         if val:
             store["train_raw_val"] = train_raw
             store["test_raw_val"] = train_raw
@@ -562,10 +562,10 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
             store["train_raw_sub"] = train_raw
             store["test_raw_sub"] = test_raw
 
-    if store:
+    if store is not None:
         train = load_store(store, "train", val)
         test = load_store(store, "test", val)
-        if test and train:
+        if test is not None and train is not None:
             print("pipelined train/test recovered from store")
 
     if (store is None) or (train is None) or (test is None):
