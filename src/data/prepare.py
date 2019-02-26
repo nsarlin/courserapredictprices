@@ -16,18 +16,14 @@ def save_store(store, df, name, val=False):
     if val:
         store[name+"_val"] = df
     else:
-        store[name+"_sub"] = df
+        store[name] = df
 
 
 def load_store(store, name, val=False):
     if val:
         name = name+"_val"
-    else:
-        name = name+"_sub"
-    if name in store:
-        return store[name]
-    print(name+" not found in store")
-    return None
+
+    return store[name]
 
 
 # ## 1st feature parsing
@@ -542,40 +538,60 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     downcast_all([transactions, items, item_categories, shops, test])
 
+    # First Group transactions by month/shop/item and add implicit row (= 0 sell)
     if store is not None:
-        if "base_df" in store:
-            base_df = store["base_df"]
+        try:
+            base_df = load_store(store, "base_df")
             print("base_df loaded from store")
-        else:
+        except KeyError:
             base_df = make_base_df(transactions)
-            store["base_df"] = base_df
+            save_store(store, base_df, "base_df")
     else:
         base_df = make_base_df(transactions)
 
-    # TODO: load_store
-    train_raw, test_raw, trues = train_test_split(test, base_df, val)
-    if store is not None:  # TODO: use save_store
+    # For validation, creates a new test dataset from train formated like the
+    #     test dataset given as argument
+    # For submission, simply return the test/train dataframes given as
+    #     arguments
+    if store is not None:
+        try:
+            train_raw = load_store(store, "train_raw", val)
+            test_raw = load_store(store, "test_raw", val)
+            if val:
+                trues = load_store(store, "trues", val)
+            print("raw train/test loaded from store")
+        except KeyError:
+            if val:
+                train_raw, test_raw, trues = train_test_split(test, base_df, val)
+            else:
+                train_raw, test_raw = train_test_split(test, base_df, val)
+            print("raw train/test successfully built")
+            save_store(store, train_raw, "train_raw", val)
+            save_store(store, test_raw, "test_raw", val)
+            if val:
+                save_store(store, trues, "trues", val)
+    else:
         if val:
-            store["train_raw_val"] = train_raw
-            store["test_raw_val"] = train_raw
-            store["trues_val"] = trues
+            train_raw, test_raw, trues = train_test_split(test, base_df, val)
         else:
-            store["train_raw_sub"] = train_raw
-            store["test_raw_sub"] = test_raw
+            train_raw, test_raw = train_test_split(test, base_df, val)
+        print("raw train/test successfully built")
 
     if store is not None:
-        train = load_store(store, "train", val)
-        test = load_store(store, "test", val)
-        if test is not None and train is not None:
+        try:
+            train = load_store(store, "train", val)
+            test = load_store(store, "test", val)
             print("pipelined train/test recovered from store")
-
-    if (store is None) or (train is None) or (test is None):
+        except KeyError:
+            train, test = do_pipelines(train_raw, test_raw, items, item_categories,
+                                       shops, val)
+            print("pipelined train/test successfully built")
+            save_store(store, train, "train", val)
+            save_store(store, test, "test", val)
+    else:
         train, test = do_pipelines(train_raw, test_raw, items, item_categories,
                                    shops, val)
         print("pipelined train/test successfully built")
-        if store:
-            save_store(store, train, "train", val)
-            save_store(store, test, "test", val)
 
     X_train, y_train, X_test = X_y_split(train, test)
 
