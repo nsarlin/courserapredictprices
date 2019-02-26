@@ -5,17 +5,18 @@ from pathlib import Path
 import os
 from dotenv import find_dotenv, load_dotenv
 import pandas as pd
+import numpy as np
 import prepare
 
 
 @click.command()
 @click.argument('input_dirpath', type=click.Path(exists=True))
 @click.argument('output_dirpath', type=click.Path(exists=True))
-@click.option('-s', '--store-dirpath', type=click.Path(exists=True),
+@click.option('-i', '--interim-dirpath', type=click.Path(exists=True),
               help="Directory to save/restore intermediate data.")
 @click.option('--sub/--val', default=False,
               help="Build dataset for validation or submission")
-def main(input_dirpath, output_dirpath, store_dirpath, sub):
+def main(input_dirpath, output_dirpath, interim_dirpath, sub):
     """ Runs data processing scripts to turn raw data from input_dirpath into
         cleaned data ready to be analyzed (stored in output_dirpath).
     """
@@ -24,9 +25,9 @@ def main(input_dirpath, output_dirpath, store_dirpath, sub):
         logger.info('making final data set from raw data for submission')
     else:
         logger.info('making final data set from raw data for validation')
-    if store_dirpath:
-        logger.info('using itermediate data from {}'.format(store_dirpath))
-        store = pd.HDFStore(os.path.join(store_dirpath, "save.h5"))
+    if interim_dirpath:
+        logger.info('using itermediate data from {}'.format(interim_dirpath))
+        store = pd.HDFStore(os.path.join(interim_dirpath, "save.h5"))
 
     prepare.prepare_all(input_dirpath, output_dirpath, not sub, store)
 
