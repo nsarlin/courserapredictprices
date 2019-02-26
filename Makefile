@@ -29,6 +29,10 @@ requirements: test_environment
 data: requirements
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py -i data/interim data/raw data/processed
 
+## Make Dataset
+datasample: requirements
+	$(PYTHON_INTERPRETER) src/data/make_dataset.py --sample -i data/interim_smpl data/raw data/processed_smpl
+
 ## Delete all compiled Python files
 clean:
 	find . -type f -name "*.py[co]" -delete

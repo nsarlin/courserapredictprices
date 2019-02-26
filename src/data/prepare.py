@@ -533,9 +533,12 @@ def load_files(input_path):
     return (transactions, items, item_categories, shops, test)
 
 
-def prepare_all(input_path, output_path, val=False, store=None):
+def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     transactions, items, item_categories, shops, test = load_files(input_path)
+    if sample:
+        transactions = transactions[transactions['shop_id'].isin([26, 27, 28])]
+
     downcast_all([transactions, items, item_categories, shops, test])
 
     if store:

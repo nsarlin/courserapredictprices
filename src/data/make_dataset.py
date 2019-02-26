@@ -16,7 +16,9 @@ import prepare
               help="Directory to save/restore intermediate data.")
 @click.option('--sub/--val', default=False,
               help="Build dataset for validation or submission")
-def main(input_dirpath, output_dirpath, interim_dirpath, sub):
+@click.option('--sample/--full', default=False,
+              help="Prepare only a sample of data for quick tests")
+def main(input_dirpath, output_dirpath, interim_dirpath, sample, sub):
     """ Runs data processing scripts to turn raw data from input_dirpath into
         cleaned data ready to be analyzed (stored in output_dirpath).
     """
@@ -26,10 +28,11 @@ def main(input_dirpath, output_dirpath, interim_dirpath, sub):
     else:
         logger.info('making final data set from raw data for validation')
     if interim_dirpath:
-        logger.info('using itermediate data from {}'.format(interim_dirpath))
+        logger.info('using intermediate data from {}'.format(interim_dirpath))
         store = pd.HDFStore(os.path.join(interim_dirpath, "save.h5"))
 
-    prepare.prepare_all(input_dirpath, output_dirpath, not sub, store)
+    prepare.prepare_all(input_dirpath, output_dirpath, not sub, sample, store)
+    logger.info('done')
 
 
 if __name__ == '__main__':
