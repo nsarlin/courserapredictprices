@@ -29,10 +29,14 @@ endif
 ## Make Dataset
 data: X_train.npz
 data: SAMPLE=
+data: INTRM_PATH=data/interim
+data: OUT_PATH=data/processed
 datasample: X_train.npz
 datasample: SAMPLE=--sample
+datasample: INTRM_PATH=data/interim_smpl
+datasample: OUT_PATH=data/processed_smpl
 X_train.npz: .requirements
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py $(SAMPLE) -i data/interim data/raw data/processed
+	$(PYTHON_INTERPRETER) src/data/make_dataset.py $(SAMPLE) -i $(INTRM_PATH) data/raw $(OUT_PATH)
 
 ## Delete all compiled Python files
 clean:
