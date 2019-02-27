@@ -578,8 +578,8 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
             test = load_store(store, "test", val)
             print("pipelined train/test recovered from store")
         except KeyError:
-            train, test = do_pipelines(train_raw, test_raw, items, item_categories,
-                                       shops, val)
+            train, test = do_pipelines(train_raw, test_raw, items,
+                                       item_categories, shops, val)
             print("pipelined train/test successfully built")
             save_store(store, train, "train", val)
             save_store(store, test, "test", val)
@@ -591,7 +591,6 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
         train, test = do_pipelines(train_raw, test_raw, items, item_categories,
                                    shops, val)
         print("pipelined train/test successfully built")
-
 
     X_train, y_train, X_test = X_y_split(train, test)
 
