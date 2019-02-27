@@ -104,11 +104,11 @@ def train_test_split(test, base_df, val=False):
         val_train = base_df.loc[:32]
         idx = test.set_index(["shop_id", "item_id"]).index
         val_test = base_df.loc[33].loc[idx].reset_index()
-        y_trues = val_test["item_cnt"]
+        y_test = val_test["item_cnt"]
         val_test = val_test[["shop_id", "item_id"]]
-        return (val_train, val_test, y_trues)
+        return (val_train, val_test, y_test)
     else:
-        return (base_df, downcast_dtypes(test))
+        return (base_df, downcast_dtypes(test), None)
 
 
 # ## Features Engineering
@@ -530,6 +530,21 @@ def load_files(input_path):
     return (transactions, items, item_categories, shops, test)
 
 
+def save_processed(output_path, X_train, y_train, X_test, y_test=None):
+    print("saving data to output dir:")
+    print("y_train")
+    np.save(os.path.join(output_path, "y_train.npy"), y_train)
+
+    if y_test is not None:
+        print("y_test")
+        np.save(os.path.join(output_path, "y_test.npy"), y_test)
+
+    print("X_test")
+    save_npz(os.path.join(output_path, "X_test.npz"), X_test)
+    print("X_train")
+    save_npz(os.path.join(output_path, "X_train.npz"), X_train)
+
+
 def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     transactions, items, item_categories, shops, test = load_files(input_path)
@@ -538,7 +553,6 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     downcast_all([transactions, items, item_categories, shops, test])
 
-    # First Group transactions by month/shop/item and add implicit row (= 0 sell)
     if store is not None:
         try:
             base_df = load_store(store, "base_df")
@@ -546,38 +560,19 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
         except KeyError:
             base_df = make_base_df(transactions)
             save_store(store, base_df, "base_df")
-    else:
-        base_df = make_base_df(transactions)
 
-    # For validation, creates a new test dataset from train formated like the
-    #     test dataset given as argument
-    # For submission, simply return the test/train dataframes given as
-    #     arguments
-    if store is not None:
         try:
             train_raw = load_store(store, "train_raw", val)
             test_raw = load_store(store, "test_raw", val)
-            if val:
-                trues = load_store(store, "trues", val)
+            y_test = load_store(store, "y_test", val)
             print("raw train/test loaded from store")
         except KeyError:
-            if val:
-                train_raw, test_raw, trues = train_test_split(test, base_df, val)
-            else:
-                train_raw, test_raw = train_test_split(test, base_df, val)
+            train_raw, test_raw, y_test = train_test_split(test, base_df, val)
             print("raw train/test successfully built")
             save_store(store, train_raw, "train_raw", val)
             save_store(store, test_raw, "test_raw", val)
-            if val:
-                save_store(store, trues, "trues", val)
-    else:
-        if val:
-            train_raw, test_raw, trues = train_test_split(test, base_df, val)
-        else:
-            train_raw, test_raw = train_test_split(test, base_df, val)
-        print("raw train/test successfully built")
+            save_store(store, y_test, "y_test", val)
 
-    if store is not None:
         try:
             train = load_store(store, "train", val)
             test = load_store(store, "test", val)
@@ -588,10 +583,15 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
             print("pipelined train/test successfully built")
             save_store(store, train, "train", val)
             save_store(store, test, "test", val)
+
     else:
+        base_df = make_base_df(transactions)
+        train_raw, test_raw, y_test = train_test_split(test, base_df, val)
+        print("raw train/test successfully built")
         train, test = do_pipelines(train_raw, test_raw, items, item_categories,
                                    shops, val)
         print("pipelined train/test successfully built")
+
 
     X_train, y_train, X_test = X_y_split(train, test)
 
@@ -611,15 +611,4 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
     X_train = np_ppl.fit_transform(X_train)
     X_test = np_ppl.transform(X_test)
 
-    print("saving data to output dir:")
-    print("y_train")
-    np.save(os.path.join(output_path, "y_train.npy"), y_train)
-
-    if val:
-        print("y_trues")
-        np.save(os.path.join(output_path, "y_trues.npy"), trues)
-
-    print("X_test")
-    save_npz(os.path.join(output_path, "X_test.npz"), X_test)
-    print("X_train")
-    save_npz(os.path.join(output_path, "X_train.npz"), X_train)
+    save_processed(output_path, X_train, y_train, X_test, y_test)
