@@ -5,6 +5,7 @@ import os
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold
@@ -296,27 +297,6 @@ class CategoriesOHEncoder(BaseEstimator, TransformerMixin):
         return X
 
 
-# ### Numerical
-class NumericalStandardScaler(BaseEstimator, TransformerMixin):
-    def __init__(self, num_cols):
-        self.num_cols = num_cols
-        self.scaler = StandardScaler()
-
-    def fit(self, X, y=None):
-        self.vals = X.values[:, self.num_cols]
-        self.scaler.fit(self.vals)
-        return self
-
-    def transform(self, X, y=None):
-        print(self.__class__.__name__)
-        X = X.values
-        new_vals = self.scaler.transform(X[:, self.num_cols])
-        print(new_vals.shape)
-        print(X.shape)
-        X = np.concatenate((X, new_vals), axis=1)
-        return X
-
-
 # TODO: remove outliers for non tree based
 class CntClipper(BaseEstimator, TransformerMixin):
     def __init__(self, col, min, max):
@@ -600,17 +580,15 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
     cat_cols = ["item_category_id", "subcat0", "subcat1"]
     num_cols = list(set(X_train.columns.values) - set(cat_cols))
 
-    np_ppl = Pipeline([
-        ("standard scaler", NumericalStandardScaler(list(map(X_train.columns
-                                                             .get_loc,
-                                                             num_cols)))),
-        ("oh encoder",
-         OneHotEncoder(categorical_features=list(map(X_train.columns.get_loc,
-                                                     cat_cols)),
-                       dtype=np.float32)),
+    col_trans = ColumnTransformer([
+        ("standard scaler", StandardScaler(), num_cols),
+        ("oh encoder", OneHotEncoder(dtype=np.float32, categories="auto"),
+         cat_cols),
     ])
 
-    X_train = np_ppl.fit_transform(X_train)
-    X_test = np_ppl.transform(X_test)
+    X_train = col_trans.fit_transform(X_train)
+    X_test = col_trans.transform(X_test)
 
     save_processed(output_path, X_train, y_train, X_test, y_test)
+    print(X_train.shape)
+    print(y_train.shape)
