@@ -101,9 +101,12 @@ def make_base_df(transactions):
 # test set downloaded from kaggle
 def train_test_split(test, base_df, val=False):
     if val:
+        # Train with the first 32 months
         val_train = base_df.loc[:32]
+
+        # Keep only the shop/items that will be asked in test by kaggle
         idx = test.set_index(["shop_id", "item_id"]).index
-        val_test = base_df.loc[33].loc[idx].reset_index()
+        val_test = base_df.loc[33].reindex(idx).reset_index()
         y_test = val_test["item_cnt"]
         val_test = val_test[["shop_id", "item_id"]]
         return (val_train, val_test, y_test)
@@ -226,7 +229,7 @@ class MeanEncoder(BaseEstimator, TransformerMixin):
 
     def transform(self, X, y=None):
         print(self.__class__.__name__)
-        X = X.reset_index()
+        X.reset_index(inplace=True)
         for col in self.cat_cols:
             X[col+'_target_enc'] = np.nan
         if "item_cnt" in X.columns:
@@ -236,7 +239,7 @@ class MeanEncoder(BaseEstimator, TransformerMixin):
                 others = X.iloc[others_idx]
                 for col in self.cat_cols:
                     col_target_mean = others.groupby(col).item_cnt.mean()
-                    X[col+'_target_enc'].iloc[cur_idx] = \
+                    X.loc[cur_idx, col+'_target_enc'] = \
                         cur[col].map(col_target_mean)
             return X.set_index(["date_block_num", "shop_id", "item_id"])
         else:
