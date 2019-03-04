@@ -1,4 +1,4 @@
-.PHONY: clean data datasample lint sync_data_to_s3 sync_data_from_s3
+.PHONY: clean dataclean data datasample lint sync_data_to_s3 sync_data_from_s3
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -27,21 +27,21 @@ endif
 	touch .requirements
 
 ## Make Dataset
-data: X_train.npz
-data: SAMPLE=
-data: INTRM_PATH=data/interim
-data: OUT_PATH=data/processed
-datasample: X_train.npz
-datasample: SAMPLE=--sample
-datasample: INTRM_PATH=data/interim_smpl
-datasample: OUT_PATH=data/processed_smpl
-X_train.npz: .requirements
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py $(SAMPLE) -i $(INTRM_PATH) data/raw $(OUT_PATH)
+data: data/processed/X_train.npz
+datasample: data/processed_smpl/X_train.npz
+data/processed_smpl/X_train.npz: .requirements src/data/prepare.py src/data/make_dataset.py
+	$(PYTHON_INTERPRETER) src/data/make_dataset.py --sample -i data/interim_smpl data/raw data/processed_smpl
+data/processed/X_train.npz: .requirements
+	$(PYTHON_INTERPRETER) src/data/make_dataset.py -i data/interim data/raw data/processed
 
 ## Delete all compiled Python files
 clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
+
+dataclean:
+	rm -f data/processed/X_train.npz
+	rm -f data/processed_smpl/X_train.npz
 
 ## Lint using flake8
 lint:
