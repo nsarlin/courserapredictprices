@@ -11,6 +11,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold
 from scipy.sparse import hstack, save_npz
 
+SHOP_SAMPLE_RATIO = .1
+ITEM_SAMPLE_RATIO = .1
+SEED = 42
 
 def save_store(store, df, name, val=False):
     print("Storing matrix {}".format(name))
@@ -54,9 +57,11 @@ def downcast_all(df_list):
 
 # ## Group by month/shop/item
 
-# target is total of sales for each shop and item within a month.
-# We have to build a dataframe with this shape for our model to work on.
 def grp_trans(transactions):
+    """
+    Aggregate data from individual transactions by tuple (month, shop, item)
+    item_cnt is summed over a month and item_price is averaged
+    """
     aggd = dict.fromkeys(transactions.drop(["date"], axis=1).columns, "first")
     aggd["item_cnt_day"] = "sum"
     aggd["item_price"] = "mean"
@@ -70,14 +75,28 @@ def grp_trans(transactions):
     return grpd
 
 
-# Add implicit rows (with no transactions)
-def add_implicit_rows(grpd):
+def add_implicit_rows(grpd, items, shops):
+    """
+    The raw dataset contains only datas for transactions.
+    If we reindex with (month, shop, item), we need to create rows for when
+    an item has not been sold by a given shop in a given month.
+    """
     grpd.set_index(["date_block_num", "shop_id", "item_id"], inplace=True)
     l1 = np.arange(34)
-    shops_idx = grpd.index.get_level_values("shop_id")
-    items_idx = grpd.index.get_level_values("item_id")
-    l2 = np.arange(shops_idx.min(), shops_idx.max()+1)
-    l3 = np.arange(items_idx.min(), items_idx.max()+1)
+    shops_idx = shops.shop_id
+    items_idx = items.item_id
+
+    # All shops from the test set are present in the train set. We don't have
+    # to "anticipate" new shops.
+    l2 = shops_idx.values
+    print(len(l2))
+
+    # Some items from the test set might not be present in the train set. We
+    # create empty rows for every possible items.
+    l3 = items_idx.values
+    print(len(l3))
+
+    # Create new index from the product of l1, l2 and l3 to create implicit
     idx = pd.MultiIndex.from_product([l1, l2, l3],
                                      names=["date_block_num",
                                             "shop_id", "item_id"])
@@ -86,12 +105,16 @@ def add_implicit_rows(grpd):
     return grpd
 
 
-def make_base_df(transactions):
-
+def make_base_df(transactions, items, shops):
+    """
+    Target is total of sales for each shop and item within a month.
+    We have to build a dataframe with this shape for our model to work on,
+    with index (month, shop, item).
+    """
     base_df = grp_trans(transactions)
     print("Grouping done")
 
-    base_df = add_implicit_rows(base_df)
+    base_df = add_implicit_rows(base_df, items, shops)
     print("Implicit rows done")
     return base_df
 
@@ -515,24 +538,36 @@ def load_files(input_path):
 
 def save_processed(output_path, X_train, y_train, X_test, y_test=None):
     print("saving data to output dir:")
-    print("y_train")
+    print("y_train {}".format(y_train.shape))
     np.save(os.path.join(output_path, "y_train.npy"), y_train)
 
     if y_test is not None:
-        print("y_test")
+        print("y_test {}".format(y_test.shape))
         np.save(os.path.join(output_path, "y_test.npy"), y_test)
 
-    print("X_test")
+    print("X_test {}".format(X_test.shape))
     save_npz(os.path.join(output_path, "X_test.npz"), X_test)
-    print("X_train")
+    print("X_train {}".format(X_train.shape))
     save_npz(os.path.join(output_path, "X_train.npz"), X_train)
 
 
 def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     transactions, items, item_categories, shops, test = load_files(input_path)
+
     if sample:
-        transactions = transactions[transactions['shop_id'].isin([26, 27, 28])]
+        shops = shops.sample(int(shops.shape[0]*SHOP_SAMPLE_RATIO),
+                             random_state=SEED)
+        items = items.sample(int(items.shape[0]*ITEM_SAMPLE_RATIO),
+                             random_state=SEED)
+        test = test[test["item_id"].isin(items.item_id) &
+                    test["shop_id"].isin(shops.shop_id)]
+
+    print("transactions {}".format(transactions.shape))
+    print("items {}".format(items.shape))
+    print("item_categories {}".format(item_categories.shape))
+    print("shops {}".format(shops.shape))
+    print("test {}".format(test.shape))
 
     downcast_all([transactions, items, item_categories, shops, test])
 
@@ -541,9 +576,9 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
             base_df = load_store(store, "base_df")
             print("base_df loaded from store")
         except KeyError:
-            base_df = make_base_df(transactions)
+            base_df = make_base_df(transactions, items, shops)
             save_store(store, base_df, "base_df")
-
+        print("base_df {}".format(base_df.shape))
         try:
             train_raw = load_store(store, "train_raw", val)
             test_raw = load_store(store, "test_raw", val)
@@ -568,7 +603,7 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
             save_store(store, test, "test", val)
 
     else:
-        base_df = make_base_df(transactions)
+        base_df = make_base_df(transactions, items, shops)
         train_raw, test_raw, y_test = train_test_split(test, base_df, val)
         print("raw train/test successfully built")
         train, test = do_pipelines(train_raw, test_raw, items, item_categories,
@@ -577,7 +612,7 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     X_train, y_train, X_test = X_y_split(train, test)
 
-    cat_cols = ["item_category_id", "subcat0", "subcat1"]
+    cat_cols = ["shop_id", "item_id", "item_category_id", "subcat0", "subcat1"]
     num_cols = list(set(X_train.columns.values) - set(cat_cols))
 
     col_trans = ColumnTransformer([
