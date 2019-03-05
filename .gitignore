@@ -85,6 +85,9 @@ target/
 *.swp
 *.swo
 
+# emacs
+*~
+
 # Mypy cache
 .mypy_cache/
 
