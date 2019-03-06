@@ -25,7 +25,7 @@ def main(data_dirpath, model_dirpath):
 
     logger.info("Training DNN")
     dnn_model = dnn.train(X_train, y_train)
-    dnn_model.save(os.path.join(model_dirpath, "dnn.npz"))
+    dnn.save(dnn_model, model_dirpath)
 
 
 if __name__ == "__main__":
