@@ -55,3 +55,7 @@ def save(dnn, model_dirpath):
 
 def load(model_dirpath):
     return load_model(os.path.join(model_dirpath, "dnn.h5"))
+
+
+def predict(dnn, X_train):
+    return dnn.predict(X_train)

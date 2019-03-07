@@ -28,7 +28,7 @@ def main(data_dirpath, model_dirpath, preds_dirpath):
 
     logger.info("Making predictions")
     dnn_model = dnn.load(model_dirpath)
-    y_preds = dnn_model.predict(X_test)
+    y_preds = dnn.predict(dnn_model, X_test)
     print("RMSE: {}".format(mean_squared_error(y_test, y_preds)))
 
 
