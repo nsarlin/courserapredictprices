@@ -21,6 +21,7 @@ def main(data_dirpath, model_dirpath):
 
     logger.info("Loading data")
     X_train = sp.load_npz(os.path.join(data_dirpath, "X_train.npz"))
+    # X_train = np.load(os.path.join(data_dirpath, "X_train_red.npy"))
     y_train = np.load(os.path.join(data_dirpath, "y_train.npy"))
 
     logger.info("Training DNN")
@@ -33,5 +34,3 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format=log_fmt)
 
     main()
-
-
