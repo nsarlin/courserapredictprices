@@ -26,14 +26,13 @@ def nn_batch_generator(X_data, y_data, steps_cnt):
 
 
 def train(X_train, y_train):
-
-    print(tensorflow_backend._get_available_gpus())
     dnn = Sequential()
 
     dnn.add(Dense(units=128, activation='relu', input_dim=X_train.shape[1]))
     dnn.add(Dense(units=64, activation='relu'))
     dnn.add(Dense(units=64, activation='relu'))
     dnn.add(Dense(units=1, activation='linear'))
+
     dnn.compile(loss='mean_squared_error', optimizer='adam', metrics=['mae'])
     steps_cnt = X_train.shape[0]/BATCH_SIZE
     dnn.fit_generator(generator=nn_batch_generator(X_train, y_train,
@@ -52,5 +51,5 @@ def load(model_dirpath):
     return load_model(os.path.join(model_dirpath, "dnn.h5"))
 
 
-def predict(dnn, X_train):
-    return dnn.predict(X_train)
+def predict(dnn, X_test):
+    return dnn.predict(X_test)
