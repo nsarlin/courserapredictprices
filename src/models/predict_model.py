@@ -30,9 +30,11 @@ def main(data_dirpath, model_dirpath, preds_dirpath):
     logger.info("Making predictions")
     dnn_model = dnn.load(model_dirpath)
     y_preds = dnn.predict(dnn_model, X_test)
+    np.save(os.path.join(data_dirpath, "y_preds_dnn.npy"), y_preds)
     print("DNN RMSE: {}".format(mean_squared_error(y_test, y_preds)))
     xgb_model = xgb.load(model_dirpath)
     y_preds = xgb.predict(xgb_model, X_test)
+    np.save(os.path.join(data_dirpath, "y_preds_xgb.npy"), y_preds)
     print("XGB RMSE: {}".format(mean_squared_error(y_test, y_preds)))
 
 
