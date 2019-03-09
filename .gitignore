@@ -78,6 +78,7 @@ target/
 # exclude data and trained models from source control by default
 /data/
 /models/
+/models_smpl/
 
 # Mac OS-specific storage files
 .DS_Store
