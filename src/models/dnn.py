@@ -1,6 +1,7 @@
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.backend import tensorflow_backend
 from keras.models import load_model
 
 import os
