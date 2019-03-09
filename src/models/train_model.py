@@ -6,14 +6,12 @@ import os
 import scipy.sparse as sp
 import numpy as np
 
-import dnn
-import xgb
-
 
 @click.command()
+@click.argument('model', type=click.STRING)
 @click.argument('data_dirpath', type=click.Path(exists=True))
 @click.argument('model_dirpath', type=click.Path(exists=True))
-def main(data_dirpath, model_dirpath):
+def main(model, data_dirpath, model_dirpath):
     """
     Trains model from data found in data_dirpath, and stores it in
     model_dirpath.
@@ -24,12 +22,18 @@ def main(data_dirpath, model_dirpath):
     X_train = sp.load_npz(os.path.join(data_dirpath, "X_train.npz")).tocsr()
     y_train = np.load(os.path.join(data_dirpath, "y_train.npy"))
 
-    logger.info("Training DNN")
-    dnn_model = dnn.train(X_train, y_train)
-    dnn.save(dnn_model, model_dirpath)
-    logger.info("Training XGB")
-    xgb_model = xgb.train(X_train, y_train)
-    xgb.save(xgb_model, model_dirpath)
+    if model == "dnn":
+        import dnn
+        logger.info("Training DNN")
+        dnn_model = dnn.train(X_train, y_train)
+        dnn.save(dnn_model, model_dirpath)
+    elif model == "xgb":
+        import xgb
+        logger.info("Training XGB")
+        xgb_model = xgb.train(X_train, y_train)
+        xgb.save(xgb_model, model_dirpath)
+    else:
+        logger.error("Invalid model: {}".format(model))
 
 
 if __name__ == "__main__":
