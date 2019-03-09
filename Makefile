@@ -1,4 +1,4 @@
-.PHONY: clean dataclean data datasample lint sync_data_to_s3 sync_data_from_s3
+.PHONY: clean dataclean data datasample train trainsample lint sync_data_to_s3 sync_data_from_s3
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -9,6 +9,11 @@ BUCKET = [OPTIONAL] your-bucket-for-syncing-data (do not include 's3://')
 PROFILE = default
 PROJECT_NAME = courserapredictprices
 PYTHON_INTERPRETER = python3
+
+DATA_TARG = data/processed/X_train.npz
+DATA_SMPL_TARG = data/processed_smpl/X_train.npz
+TRAIN_TARG = models/dnn.h5 models/xgb.bin
+TRAIN_SMPL_TARG = models_smpl/dnn.h5 models_smpl/xgb.bin
 
 ifeq (,$(shell which conda))
 HAS_CONDA=False
@@ -27,12 +32,12 @@ endif
 	touch .requirements
 
 ## Make Dataset
-data: data/processed/X_train.npz
-datasample: data/processed_smpl/X_train.npz
-data/processed_smpl/X_train.npz: .requirements src/data/prepare.py src/data/make_dataset.py
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py --sample -i data/interim_smpl data/raw data/processed_smpl
-data/processed/X_train.npz: .requirements
+data: $(DATA_TARG)
+datasample: $(DATA_SMPL_TARG)
+$(DATA_TARG): .requirements src/data/prepare.py src/data/make_dataset.py
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py -i data/interim data/raw data/processed
+$(DATA_SMPL_TARG): .requirements src/data/prepare.py src/data/make_dataset.py
+	$(PYTHON_INTERPRETER) src/data/make_dataset.py --sample -i data/interim_smpl data/raw data/processed_smpl
 
 ## Delete all compiled Python files
 clean:
@@ -89,6 +94,16 @@ endif
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
+train: $(TRAIN_TARG)
+trainsample: $(TRAIN_SMPL_TARG)
+models/dnn.h5: $(DATA_TARG)
+	optirun $(PYTHON_INTERPRETER) src/models/train_model.py dnn data/processed models
+models_smpl/dnn.h5: $(DATA_SMPL_TARG)
+	optirun $(PYTHON_INTERPRETER) src/models/train_model.py dnn data/processed_smpl models_smpl
+models/xgb.bin: $(DATA_TARG)
+	$(PYTHON_INTERPRETER) src/models/train_model.py xgb data/processed models
+models_smpl/xgb.bin: $(DATA_SMPL_TARG)
+	$(PYTHON_INTERPRETER) src/models/train_model.py xgb data/processed_smpl models_smpl
 
 
 
