@@ -9,6 +9,7 @@ import scipy.sparse as sp
 import numpy as np
 
 import dnn
+import xgb
 
 
 @click.command()
@@ -29,7 +30,10 @@ def main(data_dirpath, model_dirpath, preds_dirpath):
     logger.info("Making predictions")
     dnn_model = dnn.load(model_dirpath)
     y_preds = dnn.predict(dnn_model, X_test)
-    print("RMSE: {}".format(mean_squared_error(y_test, y_preds)))
+    print("DNN RMSE: {}".format(mean_squared_error(y_test, y_preds)))
+    xgb_model = xgb.load(model_dirpath)
+    y_preds = xgb.predict(xgb_model, X_test)
+    print("XGB RMSE: {}".format(mean_squared_error(y_test, y_preds)))
 
 
 if __name__ == "__main__":
