@@ -31,10 +31,10 @@ def nn_batch_generator(X_data, y_data, steps_cnt):
 def train(X_train, y_train):
     dnn = keras.Sequential()
 
-    dnn.add(keras.layers.Dense(units=DNN_SHAPE[0], activation='relu',
+    dnn.add(keras.layers.Dense(units=DNN_SHAPE[0], activation=tf.nn.selu,
                                input_dim=X_train.shape[1]))
     for units_cnt in DNN_SHAPE[1:]:
-        dnn.add(keras.layers.Dense(units=units_cnt, activation='relu'))
+        dnn.add(keras.layers.Dense(units=units_cnt, activation=tf.nn.selu))
     dnn.add(keras.layers.Dense(units=1, activation='linear'))
 
     dnn.compile(loss='mean_squared_error', optimizer='adam', metrics=['mae'])
