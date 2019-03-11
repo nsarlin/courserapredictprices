@@ -3,14 +3,14 @@ import numpy as np
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from keras.backend import tensorflow_backend
-from keras.models import Sequential, load_model
-from keras.layers import Dense
+import tensorflow as tf           # NOQA: E402
+import tensorflow.keras as keras  # NOQA: E402
 
 BATCH_SIZE = 128
-SHAPE = [128, 64, 64]
+DNN_SHAPE = [128, 64, 64]
 
-print(tensorflow_backend._get_available_gpus())
+print(tf.test.is_gpu_available())
+
 
 def nn_batch_generator(X_data, y_data, steps_cnt):
     batch_size = int(X_data.shape[0]/steps_cnt)
@@ -29,18 +29,19 @@ def nn_batch_generator(X_data, y_data, steps_cnt):
 
 
 def train(X_train, y_train):
-    dnn = Sequential()
+    dnn = keras.Sequential()
 
-    dnn.add(Dense(units=SHAPE[0], activation='relu', input_dim=X_train.shape[1]))
-    for units_cnt in SHAPE[1:]:
-        dnn.add(Dense(units=units_cnt, activation='relu'))
-    dnn.add(Dense(units=1, activation='linear'))
+    dnn.add(keras.layers.Dense(units=DNN_SHAPE[0], activation='relu',
+                               input_dim=X_train.shape[1]))
+    for units_cnt in DNN_SHAPE[1:]:
+        dnn.add(keras.layers.Dense(units=units_cnt, activation='relu'))
+    dnn.add(keras.layers.Dense(units=1, activation='linear'))
 
     dnn.compile(loss='mean_squared_error', optimizer='adam', metrics=['mae'])
-    steps_cnt = X_train.shape[0]/BATCH_SIZE
+    steps_cnt = int(X_train.shape[0]/BATCH_SIZE)
     dnn.fit_generator(generator=nn_batch_generator(X_train, y_train,
                                                    steps_cnt),
-                      nb_epoch=3, steps_per_epoch=steps_cnt)
+                      epochs=3, steps_per_epoch=steps_cnt)
 
     print("DNN train done")
     return dnn
@@ -51,7 +52,7 @@ def save(dnn, model_dirpath):
 
 
 def load(model_dirpath):
-    return load_model(os.path.join(model_dirpath, "dnn.h5"))
+    return keras.models.load_model(os.path.join(model_dirpath, "dnn.h5"))
 
 
 def predict(dnn, X_test):
