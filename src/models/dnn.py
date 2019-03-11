@@ -3,12 +3,13 @@ import numpy as np
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from keras.models import Sequential
+from keras.backend import tensorflow_backend
+from keras.models import Sequential, load_model
 from keras.layers import Dense
-from keras.models import load_model
 
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 
+print(tensorflow_backend._get_available_gpus())
 
 def nn_batch_generator(X_data, y_data, steps_cnt):
     batch_size = int(X_data.shape[0]/steps_cnt)
