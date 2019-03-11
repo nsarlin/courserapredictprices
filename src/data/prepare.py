@@ -11,9 +11,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold
 from scipy.sparse import hstack, save_npz
 
-SHOP_SAMPLE_RATIO = .1
-ITEM_SAMPLE_RATIO = .1
+SHOP_SAMPLE_RATIO = .5
+ITEM_SAMPLE_RATIO = .5
 SEED = 42
+
 
 def save_store(store, df, name, val=False):
     print("Storing matrix {}".format(name))

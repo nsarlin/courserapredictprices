@@ -94,15 +94,15 @@ endif
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
-train: $(TRAIN_TARG)
-trainsample: $(TRAIN_SMPL_TARG)
-models/dnn.h5: $(DATA_TARG)
+train: $(TRAIN_TARG) src/models/train_model.py
+trainsample: $(TRAIN_SMPL_TARG) src/models/train_model.py
+models/dnn.h5: $(DATA_TARG) src/models/dnn.py
 	optirun $(PYTHON_INTERPRETER) src/models/train_model.py dnn data/processed models
-models_smpl/dnn.h5: $(DATA_SMPL_TARG)
+models_smpl/dnn.h5: $(DATA_SMPL_TARG) src/models/dnn.py
 	optirun $(PYTHON_INTERPRETER) src/models/train_model.py dnn data/processed_smpl models_smpl
-models/xgb.bin: $(DATA_TARG)
+models/xgb.bin: $(DATA_TARG) src/models/xgb.py
 	$(PYTHON_INTERPRETER) src/models/train_model.py xgb data/processed models
-models_smpl/xgb.bin: $(DATA_SMPL_TARG)
+models_smpl/xgb.bin: $(DATA_SMPL_TARG) src/models/xgb.py
 	$(PYTHON_INTERPRETER) src/models/train_model.py xgb data/processed_smpl models_smpl
 
 
