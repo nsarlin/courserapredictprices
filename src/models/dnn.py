@@ -8,6 +8,7 @@ from keras.models import Sequential, load_model
 from keras.layers import Dense
 
 BATCH_SIZE = 128
+SHAPE = [128, 64, 64]
 
 print(tensorflow_backend._get_available_gpus())
 
@@ -30,9 +31,9 @@ def nn_batch_generator(X_data, y_data, steps_cnt):
 def train(X_train, y_train):
     dnn = Sequential()
 
-    dnn.add(Dense(units=128, activation='relu', input_dim=X_train.shape[1]))
-    dnn.add(Dense(units=64, activation='relu'))
-    dnn.add(Dense(units=64, activation='relu'))
+    dnn.add(Dense(units=SHAPE[0], activation='relu', input_dim=X_train.shape[1]))
+    for units_cnt in SHAPE[1:]:
+        dnn.add(Dense(units=units_cnt, activation='relu'))
     dnn.add(Dense(units=1, activation='linear'))
 
     dnn.compile(loss='mean_squared_error', optimizer='adam', metrics=['mae'])
