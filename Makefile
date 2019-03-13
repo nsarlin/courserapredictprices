@@ -14,6 +14,10 @@ DATA_TARG = data/processed/X_train.npz
 DATA_SMPL_TARG = data/processed_smpl/X_train.npz
 TRAIN_TARG = models/dnn.h5 models/xgb.bin
 TRAIN_SMPL_TARG = models_smpl/dnn.h5 models_smpl/xgb.bin
+DATA_SRC = src/data/prepare.py src/data/make_dataset.py
+TRAIN_SRC = src/models/train_model.py
+DNN_SRC = src/models/dnn.py
+XGB_SRC = src/models/xgb.py
 
 ifeq (,$(shell which conda))
 HAS_CONDA=False
@@ -34,9 +38,9 @@ endif
 ## Make Dataset
 data: $(DATA_TARG)
 datasample: $(DATA_SMPL_TARG)
-$(DATA_TARG): .requirements src/data/prepare.py src/data/make_dataset.py
+$(DATA_TARG): .requirements $(DATA_SRC)
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py -i data/interim data/raw data/processed
-$(DATA_SMPL_TARG): .requirements src/data/prepare.py src/data/make_dataset.py
+$(DATA_SMPL_TARG): .requirements $(DATA_SRC)
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py --sample -i data/interim_smpl data/raw data/processed_smpl
 
 ## Delete all compiled Python files
@@ -94,15 +98,15 @@ endif
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
-train: $(TRAIN_TARG) src/models/train_model.py
-trainsample: $(TRAIN_SMPL_TARG) src/models/train_model.py
-models/dnn.h5: $(DATA_TARG) src/models/dnn.py
+train: $(TRAIN_TARG) $(TRAIN_SRC)
+trainsample: $(TRAIN_SMPL_TARG) $(TRAIN_SRC)
+models/dnn.h5: $(DATA_TARG) $(DNN_SRC)
 	optirun $(PYTHON_INTERPRETER) src/models/train_model.py dnn data/processed models
-models_smpl/dnn.h5: $(DATA_SMPL_TARG) src/models/dnn.py
+models_smpl/dnn.h5: $(DATA_SMPL_TARG) $(DNN_SRC)
 	optirun $(PYTHON_INTERPRETER) src/models/train_model.py dnn data/processed_smpl models_smpl
-models/xgb.bin: $(DATA_TARG) src/models/xgb.py
+models/xgb.bin: $(DATA_TARG) $(XGB_SRC)
 	$(PYTHON_INTERPRETER) src/models/train_model.py xgb data/processed models
-models_smpl/xgb.bin: $(DATA_SMPL_TARG) src/models/xgb.py
+models_smpl/xgb.bin: $(DATA_SMPL_TARG) $(XGB_SRC)
 	$(PYTHON_INTERPRETER) src/models/train_model.py xgb data/processed_smpl models_smpl
 
 
