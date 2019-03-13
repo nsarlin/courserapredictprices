@@ -47,7 +47,6 @@ def train(X_train, y_train):
                                                    steps_cnt),
                       epochs=3, steps_per_epoch=steps_cnt)
 
-    print("DNN train done")
     return dnn
 
 

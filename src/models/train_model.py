@@ -27,11 +27,13 @@ def main(model, data_dirpath, model_dirpath):
         logger.info("Training DNN")
         dnn_model = dnn.train(X_train, y_train)
         dnn.save(dnn_model, model_dirpath)
+        logger.info("DNN train done")
     elif model == "xgb":
         import xgb
         logger.info("Training XGB")
         xgb_model = xgb.train(X_train, y_train)
         xgb.save(xgb_model, model_dirpath)
+        logger.info("XGB train done")
     else:
         logger.error("Invalid model: {}".format(model))
 
