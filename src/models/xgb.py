@@ -2,7 +2,9 @@ import xgboost as xgb
 import joblib
 import os
 
-xgb_params = {'eta': 0.1, 'seed': 0, 'subsample': 1, 'colsample_bytree': 0.7,
+from src import common
+
+xgb_params = {'eta': 0.1, 'seed': common.RANDOM_SEED, 'subsample': 1, 'colsample_bytree': 0.7,
               'objective': 'reg:linear', 'max_depth': 13,
               'min_child_weight': 20, 'eval_metric': 'rmse', 'silent': 1}
 

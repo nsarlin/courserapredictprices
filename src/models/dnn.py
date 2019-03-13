@@ -1,6 +1,8 @@
 import os
 import numpy as np
 
+from src import common
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import tensorflow as tf           # NOQA: E402
@@ -10,6 +12,8 @@ BATCH_SIZE = 128
 DNN_SHAPE = [128, 64, 64]
 
 print(tf.test.is_gpu_available())
+tf.set_random_seed(common.RANDOM_SEED)
+np.random.seed(common.RANDOM_SEED)
 
 
 def nn_batch_generator(X_data, y_data, steps_cnt):

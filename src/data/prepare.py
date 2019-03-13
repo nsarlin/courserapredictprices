@@ -11,9 +11,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold
 from scipy.sparse import hstack, save_npz
 
+from src import common
+
 SHOP_SAMPLE_RATIO = .5
 ITEM_SAMPLE_RATIO = .5
-SEED = 42
 
 
 def save_store(store, df, name, val=False):
@@ -558,9 +559,9 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     if sample:
         shops = shops.sample(int(shops.shape[0]*SHOP_SAMPLE_RATIO),
-                             random_state=SEED)
+                             random_state=common.RANDOM_SEED)
         items = items.sample(int(items.shape[0]*ITEM_SAMPLE_RATIO),
-                             random_state=SEED)
+                             random_state=common.RANDOM_SEED)
         test = test[test["item_id"].isin(items.item_id) &
                     test["shop_id"].isin(shops.shop_id)]
 
