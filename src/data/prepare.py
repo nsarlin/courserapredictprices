@@ -538,7 +538,7 @@ def load_files(input_path):
     return (transactions, items, item_categories, shops, test)
 
 
-def save_processed(output_path, X_train, y_train, X_test, y_test=None):
+def save_processed(output_path, labels, X_train, y_train, X_test, y_test=None):
     print("saving data to output dir:")
     print("y_train {}".format(y_train.shape))
     np.save(os.path.join(output_path, "y_train.npy"), y_train)
@@ -551,6 +551,22 @@ def save_processed(output_path, X_train, y_train, X_test, y_test=None):
     save_npz(os.path.join(output_path, "X_test.npz"), X_test)
     print("X_train {}".format(X_train.shape))
     save_npz(os.path.join(output_path, "X_train.npz"), X_train)
+    print("labels {}".format(len(labels)))
+    with open(os.path.join(output_path, "labels.txt"), "w") as txt_file:
+        txt_file.write(",".join(labels))
+
+
+def make_oh_cols_names(cat_cols_names, categories):
+    """
+    Build names for OneHot encoded categories.
+    """
+    assert(len(cat_cols_names) == len(categories))
+    oh_names = []
+    for col_name, col_cats in zip(cat_cols_names, categories):
+        for cat in col_cats:
+            oh_names.append(col_name + "_" + str(int(cat)))
+
+    return oh_names
 
 
 def prepare_all(input_path, output_path, val=False, sample=False, store=None):
@@ -615,17 +631,20 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
     X_train, y_train, X_test = X_y_split(train, test)
 
     cat_cols = ["shop_id", "item_id", "item_category_id", "subcat0", "subcat1"]
-    num_cols = list(set(X_train.columns.values) - set(cat_cols))
+    num_cols = X_train.columns.values.tolist()
+    for cat in cat_cols: # Using sets here would not keep the columns order
+        num_cols.remove(cat)
 
     col_trans = ColumnTransformer([
         ("standard scaler", StandardScaler(), num_cols),
-        ("oh encoder", OneHotEncoder(dtype=np.float32, categories="auto"),
+        ("oh encoder", OneHotEncoder(dtype=np.float32),
          cat_cols),
     ])
 
     X_train = col_trans.fit_transform(X_train)
     X_test = col_trans.transform(X_test)
 
-    save_processed(output_path, X_train, y_train, X_test, y_test)
+    new_cols = num_cols + make_oh_cols_names(cat_cols, col_trans.named_transformers_["oh encoder"].categories_)
+    save_processed(output_path, new_cols, X_train, y_train, X_test, y_test)
     print(X_train.shape)
     print(y_train.shape)
