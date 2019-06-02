@@ -91,12 +91,12 @@ def add_implicit_rows(grpd, items, shops):
     # All shops from the test set are present in the train set. We don't have
     # to "anticipate" new shops.
     l2 = shops_idx.values
-    print(len(l2))
 
     # Some items from the test set might not be present in the train set. We
     # create empty rows for every possible items.
     l3 = items_idx.values
-    print(len(l3))
+    print("Creating multiindex of {} * {} * {} = {}".\
+          format(len(l1), len(l2), len(l3), len(l1)*len(l2)*len(l3)))
 
     # Create new index from the product of l1, l2 and l3 to create implicit
     idx = pd.MultiIndex.from_product([l1, l2, l3],
@@ -446,8 +446,6 @@ class TestLagAdder(BaseEstimator, TransformerMixin):
 
 mean_enc_cols = ["item_id", "shop_id", "item_category_id", "year", "month",
                  "subcat0", "subcat1"]
-lags_list = [1, 2, 3, 4, 5]
-lag_cols = ["item_price", "item_cnt"]
 # , "item_cnt_mean_month_item", "item_cnt_mean_month_shop"]
 
 
@@ -471,7 +469,7 @@ def do_pipelines(train, test, items, item_categories, shops, val=False):
     ])
 
     train_ppl_2 = Pipeline([
-        ("lag_adder", TrainLagAdder(lag_cols, lags_list)),
+        ("lag_adder", TrainLagAdder(common.LAG_COLS, common.LAGS_LIST)),
     ])
 
     train_ppl = Pipeline([
@@ -542,6 +540,8 @@ def save_processed(output_path, labels, X_train, y_train, X_test, y_test=None):
     print("saving data to output dir:")
     print("y_train {}".format(y_train.shape))
     np.save(os.path.join(output_path, "y_train.npy"), y_train)
+    print("X_train {}".format(X_train.shape))
+    save_npz(os.path.join(output_path, "X_train.npz"), X_train)
 
     if y_test is not None:
         print("y_test {}".format(y_test.shape))
@@ -549,8 +549,6 @@ def save_processed(output_path, labels, X_train, y_train, X_test, y_test=None):
 
     print("X_test {}".format(X_test.shape))
     save_npz(os.path.join(output_path, "X_test.npz"), X_test)
-    print("X_train {}".format(X_train.shape))
-    save_npz(os.path.join(output_path, "X_train.npz"), X_train)
     print("labels {}".format(len(labels)))
     with open(os.path.join(output_path, "labels.txt"), "w") as txt_file:
         txt_file.write(",".join(labels))
@@ -604,6 +602,7 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
             print("raw train/test loaded from store")
         except KeyError:
             train_raw, test_raw, y_test = train_test_split(test, base_df, val)
+            print("train_raw {}, test_raw {}".format(train_raw.shape, test_raw.shape))
             print("raw train/test successfully built")
             save_store(store, train_raw, "train_raw", val)
             save_store(store, test_raw, "test_raw", val)
@@ -616,6 +615,7 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
         except KeyError:
             train, test = do_pipelines(train_raw, test_raw, items,
                                        item_categories, shops, val)
+            print("train {}, test {}".format(train.shape, test.shape))
             print("pipelined train/test successfully built")
             save_store(store, train, "train", val)
             save_store(store, test, "test", val)
@@ -646,5 +646,7 @@ def prepare_all(input_path, output_path, val=False, sample=False, store=None):
 
     new_cols = num_cols + make_oh_cols_names(cat_cols, col_trans.named_transformers_["oh encoder"].categories_)
     save_processed(output_path, new_cols, X_train, y_train, X_test, y_test)
-    print(X_train.shape)
-    print(y_train.shape)
+    print("X_train:", X_train.shape)
+    print("y_train:", y_train.shape)
+    print("X_test:", X_test.shape)
+    print("y_test:", y_test.shape)
