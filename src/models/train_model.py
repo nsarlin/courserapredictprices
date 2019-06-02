@@ -28,6 +28,14 @@ def main(model, data_dirpath, model_dirpath):
         dnn_model = dnn.train(X_train, y_train)
         dnn.save(dnn_model, model_dirpath)
         logger.info("DNN train done")
+    if model == "rnn":
+        import rnn
+        logger.info("Training RNN")
+        labels = open(os.path.join(data_dirpath, "labels.txt")).read().split(",")
+        X_train = rnn.prepare(X_train, labels)
+        rnn_model = rnn.train(X_train, y_train)
+        rnn.save(rnn_model, model_dirpath)
+        logger.info("RNN train done")
     elif model == "xgb":
         import xgb
         logger.info("Training XGB")

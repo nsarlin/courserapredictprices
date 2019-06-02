@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from itertools import product
 
 from src import common
 
@@ -45,6 +46,13 @@ def save(rnn, model_dirpath):
 
 def load(model_dirpath):
     return keras.models.load_model(os.path.join(model_dirpath, "rnn.h5"))
+
+def prepare(X_train, labels):
+    lag_col_names = ["{}-{}".format(colname, lagval) for colname, lagval \
+                     in product(common.LAG_COLS, common.LAGS_LIST)]
+    idx_tokeep = [idx for idx, val in enumerate(labels) if val not in lag_col_names]
+    X_train = X_train[:,idx_tokeep]
+    return X_train
 
 
 def predict(rnn, X_test):
